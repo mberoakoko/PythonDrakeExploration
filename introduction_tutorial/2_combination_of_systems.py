@@ -1,36 +1,42 @@
 import matplotlib.pyplot as plt
 import matplotlib
+from matplotlib.figure import Figure
+
 import numpy as np
 
 from pydrake.examples import PendulumPlant
 from pydrake.systems.controllers import PidController
-from pydrake.systems.framework import DiagramBuilder
-from pydrake.systems.primitives import LogVectorOutput
+from pydrake.systems.framework import DiagramBuilder, Context, Diagram
+from pydrake.systems.primitives import LogVectorOutput, VectorLogSink
+from pydrake.systems.analysis import Simulator
 from pydrake.systems.drawing import plot_system_graphviz
+from pyparsing import lineEnd
 
+# plt.rcParams.update({"figure.dpi": 300})
 matplotlib.use('TkAgg')
+plt.style.use("bmh")
 
 
 def simple_diagram_builder():
     builder = DiagramBuilder()
-    pendulum = builder.AddNamedSystem("PendulumPlant", PendulumPlant())
-    controlller = builder.AddNamedSystem(
+    pendulum__ = builder.AddNamedSystem("PendulumPlant", PendulumPlant())
+    controlller_ = builder.AddNamedSystem(
         "Controller",
         PidController(
-            kp=np.array([1.0]),
-            ki=np.array([1.0]),
-            kd=np.array([1.0]),
+            kp=np.array([100.0]),
+            ki=np.array([100.0]),
+            kd=np.array([10.0]),
         )
     )
 
-    builder.Connect(pendulum.get_state_output_port(), controlller.get_input_port_estimated_state())
-    builder.Connect(controlller.get_output_port_control(), pendulum.get_input_port())
+    builder.Connect(pendulum__.get_state_output_port(), controlller_.get_input_port_estimated_state())
+    builder.Connect(controlller_.get_output_port_control(), pendulum__.get_input_port())
 
-    builder.ExportInput(controlller.get_input_port_desired_state())
-    builder.ExportOutput(pendulum.get_state_output_port())
+    builder.ExportInput(controlller_.get_input_port_desired_state())
+    builder.ExportOutput(pendulum__.get_state_output_port())
 
-    logger = LogVectorOutput(pendulum.get_state_output_port(), builder)
-    logger.set_name("vec_output_logger")
+    logger__ = LogVectorOutput(pendulum__.get_state_output_port(), builder)
+    logger__.set_name("vec_output_logger")
     #
     diagram_ = builder.Build()
     diagram_.set_name("diagram")
@@ -75,6 +81,9 @@ def simulate_system(diagram_: Diagram,pendulum_: PendulumPlant, controller: PidC
 
 
 
+
+
 if __name__ == "__main__":
-    simple_diagram_builder()
+    diagram_, pendulum, controller_, logger_ = simple_diagram_builder()
+    simulate_system(diagram_, pendulum, controller_, logger_)
 
