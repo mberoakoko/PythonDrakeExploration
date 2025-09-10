@@ -74,6 +74,11 @@ def simulate_continous_system():
     plt.show()
 
 
+def simulate_discrete_system():
+    builder = DiagramBuilder()
+    system = builder.AddSystem(SimpleDiscreteTimeSystem())
+
+
 
 
 if __name__ == "__main__":

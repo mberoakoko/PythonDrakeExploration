@@ -1,8 +1,9 @@
 import numpy as np
 from pydrake.common.containers import namedview
+from pydrake.common.value import Value
 from pydrake.math import RigidTransform, RotationMatrix
 from pydrake.systems.analysis import Simulator
-from pydrake.systems.framework import BasicVector, LeafSystem, Context
+from pydrake.systems.framework import BasicVector, LeafSystem, Context, DiagramBuilder
 from pydrake.trajectories import PiecewisePolynomial
 from enum import StrEnum
 
@@ -52,16 +53,45 @@ class SwissArmyKnife(LeafSystem):
     def __calc_inner_product(self, context: Context, output: BasicVector):
         a = self.__a_port.Eval(context)
         b = self.__b_port.Eval(context)
-        output.SetFromVector([np.inner(a, b)])
+        output.SetFromVector(BasicVector([np.inner(a, b)]))
 
 def run_test_on_swiss_army_knife():
     swiss_army_knife = SwissArmyKnife()
     context = swiss_army_knife.CreateDefaultContext()
-    swiss_army_knife.GetInputPort(SwissArmyKnife.InputPorts.PORT_A).FixValue(context, [3, 4])
-    swiss_army_knife.GetInputPort(SwissArmyKnife.InputPorts.PORT_B).FixValue(context, [3, 45])
+    swiss_army_knife.GetInputPort(SwissArmyKnife.InputPorts.PORT_A).FixValue(context, BasicVector([3, 4]))
+    swiss_army_knife.GetInputPort(SwissArmyKnife.InputPorts.PORT_B).FixValue(context, BasicVector(np.array([3, 4])))
     print(f"sum : {swiss_army_knife.GetOutputPort(SwissArmyKnife.OutputPorts.SUM_PORT).Eval(context)}")
     print(f"product : {swiss_army_knife.GetOutputPort(SwissArmyKnife.OutputPorts.PRODUCT_PORT).Eval(context)}")
     print(f"InnerProduct : {swiss_army_knife.GetOutputPort(SwissArmyKnife.OutputPorts.INNER_PRODUCT_PORT).Eval(context)}")
 
+
+class RotateAboutZ(LeafSystem):
+    def __init__(self):
+        LeafSystem.__init__(self)
+        self.DeclareAbstractInputPort(
+            name="input_port",
+            model_value=Value(RigidTransform())
+        )
+
+        self.DeclareAbstractOutputPort(
+            name="out",
+            alloc=lambda :Value(RigidTransform()),
+            calc=self.CalcOutput
+        )
+
+    def CalcOutput(self, context: Context, outputs):
+        print(f"{type(outputs)}")
+        X_1 = self.get_input_port().Eval(context)
+        X_2 = RigidTransform(RotationMatrix.MakeZRotation(np.pi / 2)) @ X_1
+        outputs.set_value(X_2)
+
+
+
+def simulate_abstract_value():
+    system = RotateAboutZ()
+    context = system.CreateDefaultContext()
+    system.get_input_port().FixValue(context, RigidTransform())
+    print(system.get_output_port(0).Eval(context))
+
 if __name__ == "__main__":
-    run_test_on_swiss_army_knife()
+    simulate_abstract_value()
