@@ -15,8 +15,16 @@ from pydrake.all import (
     wrap_to,
     Context
 )
-from pydrake.systems.framework import BasicVector
+from pydrake.systems.framework import BasicVector, System, AbstractValues
 from pydrake.examples import PendulumGeometry, PendulumParams, PendulumPlant
+import matplotlib
+from matplotlib.axes import Axes
+from matplotlib.figure import Figure
+import copy
+matplotlib.use("TkAgg")
+
+plt.rcParams.update({'font.size': 8})
+plt.style.use("bmh")
 
 
 class EnergyShapingController(LeafSystem):
@@ -52,15 +60,15 @@ class EnergyShapingController(LeafSystem):
 
 def energy_shaping_demo():
     builder = DiagramBuilder()
-    pendulum: PendulumPlant = builder.AddSystem(PendulumPlant())
-    saturation: Saturation = builder.AddSystem(Saturation(min_value=[-3], max_value=[3] ))
+    pendulum: System | PendulumPlant = builder.AddSystem(PendulumPlant())
+    saturation: System | Saturation = builder.AddSystem(Saturation(min_value=[-3], max_value=[3] ))
     builder.Connect(saturation.get_output_port(0), pendulum.get_input_port(0))
-    controller: EnergyShapingController = builder.AddSystem(EnergyShapingController(pendulum))
+    controller: System | EnergyShapingController = builder.AddSystem(EnergyShapingController(pendulum))
     builder.Connect(pendulum.get_output_port(0), controller.get_input_port(0))
     builder.Connect(controller.get_output_port(0), saturation.get_input_port(0))
 
     logger = builder.AddSystem(VectorLogSink(2))
-    builder.Connect(pendulum.get_output_port(0), saturation.get_input_port(0))
+    builder.Connect(pendulum.get_output_port(0), logger.get_input_port(0))
 
     diagram = builder.Build()
     simulator = Simulator(diagram)
@@ -182,7 +190,4 @@ def swing_up_pendulum_control_demo(meshcat=StartMeshcat())-> None:
 
 
 if __name__ == "__main__":
-    meshcat = StartMeshcat()
-    count = 0
-    while True:
-        count += 1
+    swing_up_pendulum_control_demo()
